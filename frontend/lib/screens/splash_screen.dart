@@ -1,8 +1,9 @@
-// frontend/lib/screens/splash_screen.dart (attractive loading page)
-
-import 'dart:async';
+// lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
-import 'main_scaffold.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../screens/auth/login_screen.dart';
+import 'main_scaffold.dart'; 
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,7 +20,6 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -28,12 +28,26 @@ class _SplashScreenState extends State<SplashScreen>
         CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
 
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScaffold()),
-      );
-    });
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    // Try to restore saved auth token
+    await context.read<AuthProvider>().initialize();
+
+    // Wait at least 2.5 seconds for splash animation
+    await Future.delayed(const Duration(milliseconds: 2500));
+
+    if (!mounted) return;
+
+    final isLoggedIn = context.read<AuthProvider>().isLoggedIn;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => isLoggedIn ? const MainScaffold() : const LoginScreen(),
+      ),
+    );
   }
 
   @override
@@ -45,27 +59,24 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(   // Added SafeArea 
+      body: SafeArea(
         child: Container(
-          // Beautiful warm gradient background
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color(0xFFFFD580), // soft golden
-                Color(0xFF87CEEB), // light sky blue
+                Color(0xFFFFD580),
+                Color(0xFF87CEEB),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
-
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Rounded logo card
                   Container(
                     height: 140,
                     width: 140,
@@ -88,10 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
-                  // App name
                   const Text(
                     "Heritage Explorer",
                     style: TextStyle(
@@ -101,11 +109,9 @@ class _SplashScreenState extends State<SplashScreen>
                       letterSpacing: 1.3,
                     ),
                   ),
-
-                  // Tagline
                   const SizedBox(height: 10),
                   const Text(
-                    "Discover Sri Lanka’s Living History",
+                    "Discover Sri Lanka's Living History",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.black54,
@@ -113,10 +119,7 @@ class _SplashScreenState extends State<SplashScreen>
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-
                   const SizedBox(height: 40),
-
-                  // Progress indicator
                   const CircularProgressIndicator(
                     color: Color(0xFF1565C0),
                     strokeWidth: 3,
