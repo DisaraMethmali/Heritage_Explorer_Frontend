@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
+import '../services/unity_service.dart';
 import 'heritage_screen.dart';
 import 'map_route_screen.dart';
 import '../utils/config.dart';
@@ -24,8 +25,8 @@ class _LocationScreenState extends State<LocationScreen> {
   String userPlace = "";
   String exactAddress = "";
   String nearestSite = "";
-  String distance = "";       // shows ROAD distance
-  String travelTime = "";     // travel duration text
+  String distance = ""; // shows ROAD distance
+  String travelTime = ""; // travel duration text
   int siteId = 0;
 
   // user coords
@@ -33,7 +34,7 @@ class _LocationScreenState extends State<LocationScreen> {
   double? _currentLon;
 
   // last fetched coords (for smart update) / comment when testing
-  // double? _lastLat; 
+  // double? _lastLat;
   // double? _lastLon;
 
   // heritage site coords
@@ -43,7 +44,7 @@ class _LocationScreenState extends State<LocationScreen> {
   bool isAtHeritageSite = false;
   List<Map<String, dynamic>> eventsList = [];
 
-  Timer? _autoTimer;   // SMART AUTO UPDATE TIMER
+  Timer? _autoTimer; // SMART AUTO UPDATE TIMER
 
   @override
   void initState() {
@@ -138,7 +139,7 @@ class _LocationScreenState extends State<LocationScreen> {
 
   // Fake GPS for testing - Disable Auto update during testing
   void _startSmartAutoUpdate() {
-    return;  // prevents real GPS from overwriting fake GPS
+    return; // prevents real GPS from overwriting fake GPS
   }
 
   // GET CURRENT LOCATION + CALL BACKEND
@@ -157,22 +158,22 @@ class _LocationScreenState extends State<LocationScreen> {
       // _currentLon = pos.longitude;
 
       // Fake GPS for testing
-      double fakeLat = 7.2902;
-      double fakeLon = 80.6337;
+      // double fakeLat = 7.2902;
+      // double fakeLon = 80.6337;
+
+      double fakeLat = 6.042331;
+      double fakeLon = 80.208467;
 
       // Save user location
       _currentLat = fakeLat;
       _currentLon = fakeLon;
 
-      const backendUrl = "$baseUrl/location";
-      // const backendUrl = "http://192.168.1.4:5000/location";
+      // const backendUrl = "$baseUrl/location";
+      const backendUrl = "http://10.0.2.2:5000/location";
       final res = await http.post(
         Uri.parse(backendUrl),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "latitude": _currentLat,
-          "longitude": _currentLon,
-        }),
+        body: jsonEncode({"latitude": _currentLat, "longitude": _currentLon}),
       );
 
       if (res.statusCode == 200) {
@@ -201,13 +202,20 @@ class _LocationScreenState extends State<LocationScreen> {
         double? distValue = double.tryParse(distance);
         isAtHeritageSite = distValue != null && distValue < 0.2;
 
-         // EXPORT TRUTH (ONE LINE ONLY)
+        // EXPORT TRUTH (ONE LINE ONLY)
         GeoState.isUserNearSite = isAtHeritageSite;
+
+        // if (_currentLat != null && _currentLon != null) {
+        //   UnityService.post({
+        //     "type": "SYNC_GPS",
+        //     "lat": _currentLat,
+        //     "lon": _currentLon,
+        //   });
+        // }
 
         setState(() {
           isLoading = false;
         });
-
       } else {
         setState(() {
           isLoading = false;
@@ -255,14 +263,18 @@ class _LocationScreenState extends State<LocationScreen> {
       ),
 
       // MAIN BODY
-      body: SafeArea(     // prevents UI from being covered by the bottom nav bar
+      body: SafeArea(
+        // prevents UI from being covered by the bottom nav bar
         child: Center(
           child: isLoading
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.location_searching,
-                        size: 70, color: Color(0xFF004C7A)),
+                    const Icon(
+                      Icons.location_searching,
+                      size: 70,
+                      color: Color(0xFF004C7A),
+                    ),
                     const SizedBox(height: 25),
                     const CircularProgressIndicator(
                       color: Color(0xFFB8860B),
@@ -283,18 +295,17 @@ class _LocationScreenState extends State<LocationScreen> {
                     ),
                   ],
                 )
-
               // CONTENT AFTER LOADING (CARD FIRST , BUTTONS NEXT WITH PULL TO REFRESH)
               : RefreshIndicator(
-                  onRefresh: _manualRefresh,     // PULL TO REFRESH ADDED HERE
+                  onRefresh: _manualRefresh, // PULL TO REFRESH ADDED HERE
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),  // REQUIRED
+                      physics:
+                          const AlwaysScrollableScrollPhysics(), // REQUIRED
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-
                           // LOCATION CARD
                           Card(
                             elevation: 8,
@@ -307,8 +318,11 @@ class _LocationScreenState extends State<LocationScreen> {
                               padding: const EdgeInsets.all(25),
                               child: Column(
                                 children: [
-                                  const Icon(Icons.location_on_rounded,
-                                      size: 70, color: Color(0xFF004C7A)),
+                                  const Icon(
+                                    Icons.location_on_rounded,
+                                    size: 70,
+                                    color: Color(0xFF004C7A),
+                                  ),
                                   const SizedBox(height: 20),
 
                                   Text(
@@ -368,8 +382,9 @@ class _LocationScreenState extends State<LocationScreen> {
                                         const Text(
                                           "You are standing at:",
                                           style: TextStyle(
-                                              fontSize: 17,
-                                              color: Colors.black87),
+                                            fontSize: 17,
+                                            color: Colors.black87,
+                                          ),
                                         ),
                                         const SizedBox(height: 10),
                                         Text(
@@ -388,8 +403,9 @@ class _LocationScreenState extends State<LocationScreen> {
                                         const Text(
                                           "Nearest Heritage Site:",
                                           style: TextStyle(
-                                              fontSize: 17,
-                                              color: Colors.black87),
+                                            fontSize: 17,
+                                            color: Colors.black87,
+                                          ),
                                         ),
                                         const SizedBox(height: 10),
                                         Text(
@@ -431,6 +447,7 @@ class _LocationScreenState extends State<LocationScreen> {
 
                           // "Explore Nearby Heritage" button
                           ElevatedButton.icon(
+                            // Inside location_screen.dart -> ElevatedButton ("Explore Nearby Heritage")
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -439,6 +456,8 @@ class _LocationScreenState extends State<LocationScreen> {
                                     siteName: nearestSite,
                                     siteId: siteId,
                                     events: eventsList,
+                                    currentLat: _currentLat, // Pass real lat
+                                    currentLon: _currentLon, // Pass real lon
                                   ),
                                 ),
                               );
