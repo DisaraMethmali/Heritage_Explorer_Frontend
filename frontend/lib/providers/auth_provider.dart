@@ -12,13 +12,15 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitialized = false;
   String? _error;
+  String? _token;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
   bool get isInitialized => _isInitialized;
   String? get error => _error;
-
+  String? get token => _token;
+  
   Future<void> initialize() async {
     final token = await _storage.read(key: 'auth_token');
     if (token != null) {
@@ -46,6 +48,7 @@ class AuthProvider extends ChangeNotifier {
       final token = data['token'] as String;
       await _storage.write(key: 'auth_token', value: token);
       _api.setToken(token);
+      _token = token;
 
       final profile = await _api.getMe();
       if (profile['success'] == true && profile['profile'] != null) {

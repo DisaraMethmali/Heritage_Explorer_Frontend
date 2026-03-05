@@ -80,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
+            colors: [Color(0xFFFFFDE7), Color(0xFFFFF9C4)], // light yellow gradient
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -95,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   // Back button
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                    icon: const Icon(Icons.arrow_back, color: Color(0xFF4A6080)),
                     onPressed: () => Navigator.pop(context),
                     padding: EdgeInsets.zero,
                   ),
@@ -104,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const Text(
                     'Create Account',
                     style: TextStyle(
-                      color: Color(0xFFFFD700),
+                      color: Color(0xFF0D1B2A), // dark blue
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
@@ -112,7 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 4),
                   const Text(
                     'Join Heritage Explorer',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: Color(0xFF4A6080)), // muted dark blue
                   ),
                   const SizedBox(height: 28),
 
@@ -161,7 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscure ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.white54,
+                        color: const Color(0xFF4A6080),
                       ),
                       onPressed: () =>
                           setState(() => _obscure = !_obscure),
@@ -191,7 +191,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // Age Group
                   const Text('Age Group',
                       style: TextStyle(
-                          color: Colors.white70, fontWeight: FontWeight.w600)),
+                          color: Color(0xFF0D1B2A), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -201,16 +201,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         label: Text(ag,
                             style: TextStyle(
                                 color: selected
-                                    ? Colors.black
-                                    : Colors.white70)),
+                                    ? const Color(0xFFFFF9C4) // light yellow text when selected
+                                    : const Color(0xFF4A6080))),
                         selected: selected,
-                        selectedColor: const Color(0xFFFFD700),
+                        selectedColor: const Color(0xFF0D1B2A), // dark blue when selected
                         backgroundColor:
-                            Colors.white.withOpacity(0.07),
+                            const Color(0xFFFFFFFF).withOpacity(0.60),
                         side: BorderSide(
                           color: selected
-                              ? const Color(0xFFFFD700)
-                              : Colors.white24,
+                              ? const Color(0xFF0D1B2A)
+                              : const Color(0xFF0D1B2A).withOpacity(0.25),
                         ),
                         onSelected: (_) =>
                             setState(() => _ageGroup = ag),
@@ -222,7 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // Expertise Level
                   const Text('Expertise Level',
                       style: TextStyle(
-                          color: Colors.white70, fontWeight: FontWeight.w600)),
+                          color: Color(0xFF0D1B2A), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -232,16 +232,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         label: Text(el,
                             style: TextStyle(
                                 color: selected
-                                    ? Colors.black
-                                    : Colors.white70)),
+                                    ? const Color(0xFFFFF9C4) // light yellow text when selected
+                                    : const Color(0xFF4A6080))),
                         selected: selected,
-                        selectedColor: const Color(0xFFFFD700),
+                        selectedColor: const Color(0xFF0D1B2A), // dark blue when selected
                         backgroundColor:
-                            Colors.white.withOpacity(0.07),
+                            const Color(0xFFFFFFFF).withOpacity(0.60),
                         side: BorderSide(
                           color: selected
-                              ? const Color(0xFFFFD700)
-                              : Colors.white24,
+                              ? const Color(0xFF0D1B2A)
+                              : const Color(0xFF0D1B2A).withOpacity(0.25),
                         ),
                         onSelected: (_) =>
                             setState(() => _expertiseLevel = el),
@@ -256,8 +256,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: ElevatedButton(
                       onPressed: isLoading ? null : _register,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFD700),
-                        foregroundColor: Colors.black,
+                        backgroundColor: const Color(0xFF0D1B2A), // dark blue
+                        foregroundColor: const Color(0xFFFFF9C4), // light yellow text
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -267,7 +267,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.black),
+                                  strokeWidth: 2, color: Color(0xFFFFF9C4)),
                             )
                           : const Text(
                               'Create Account',
@@ -283,7 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text('Already have an account? ',
-                            style: TextStyle(color: Colors.white54)),
+                            style: TextStyle(color: Color(0xFF4A6080))),
                         GestureDetector(
                           onTap: () => Navigator.pushReplacement(
                             context,
@@ -293,7 +293,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: const Text(
                             'Sign In',
                             style: TextStyle(
-                              color: Color(0xFFFFD700),
+                              color: Color(0xFF0D1B2A), // dark blue
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -323,15 +323,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       controller: controller,
       obscureText: obscure,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Color(0xFF0D1B2A)), // dark blue text
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
-        prefixIcon: Icon(icon, color: Colors.white38),
+        labelStyle: const TextStyle(color: Color(0xFF4A6080)),
+        prefixIcon: Icon(icon, color: const Color(0xFF4A6080)),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.07),
+        fillColor: const Color(0xFFFFFFFF).withOpacity(0.70), // white-ish fill
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -339,11 +339,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide:
-              BorderSide(color: Colors.white.withOpacity(0.15)),
+              BorderSide(color: const Color(0xFF0D1B2A).withOpacity(0.20)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFFD700)),
+          borderSide: const BorderSide(color: Color(0xFF0D1B2A), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

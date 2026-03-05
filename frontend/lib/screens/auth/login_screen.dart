@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0D1B2A), Color(0xFF1B2838)],
+            colors: [Color(0xFFFFFDE7), Color(0xFFFFF9C4)], // light yellow gradient (unchanged)
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -87,19 +87,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 90,
                       height: 90,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFD700).withOpacity(0.15),
+                        color: const Color(0xFF1565C0).withOpacity(0.10),
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: const Color(0xFFFFD700), width: 2),
+                            color: const Color(0xFF1565C0), width: 2),
                       ),
                       child: const Icon(Icons.public,
-                          color: Color(0xFFFFD700), size: 50),
+                          color: Color(0xFF1565C0), size: 50),
                     ),
                     const SizedBox(height: 24),
                     const Text(
                       'Heritage Explorer',
                       style: TextStyle(
-                        color: Color(0xFFFFD700),
+                        color: Color(0xFF0D47A1), // deep blue title
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     const Text(
                       'Sign in to continue',
-                      style: TextStyle(color: Colors.white54, fontSize: 14),
+                      style: TextStyle(color: Color(0xFF1565C0), fontSize: 14),
                     ),
                     const SizedBox(height: 40),
 
@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           _obscure
                               ? Icons.visibility_off
                               : Icons.visibility,
-                          color: Colors.white54,
+                          color: const Color(0xFF1565C0),
                         ),
                         onPressed: () =>
                             setState(() => _obscure = !_obscure),
@@ -150,8 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD700),
-                          foregroundColor: Colors.black,
+                          backgroundColor: const Color(0xFF0D47A1), // deep blue button
+                          foregroundColor: const Color(0xFFFFF9C4),  // light yellow text (unchanged)
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -162,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 22,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.black),
+                                    color: Color(0xFFFFF9C4)), // light yellow spinner (unchanged)
                               )
                             : const Text(
                                 'Sign In',
@@ -192,9 +192,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               fontSize: 15, fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.purple.shade300,
-                          side: BorderSide(
-                              color: Colors.purple.shade400, width: 1.5),
+                          foregroundColor: const Color(0xFF0D47A1),
+                          side: const BorderSide(
+                              color: Color(0xFF0D47A1), width: 1.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -208,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text("Don't have an account? ",
-                            style: TextStyle(color: Colors.white54)),
+                            style: TextStyle(color: Color(0xFF1565C0))),
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
@@ -218,7 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: const Text(
                             'Register',
                             style: TextStyle(
-                              color: Color(0xFFFFD700),
+                              color: Color(0xFF0D47A1), // deep blue
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -246,27 +246,28 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Color(0xFF0D47A1)), // deep blue text
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
-        prefixIcon: Icon(icon, color: Colors.white38),
+        labelStyle: const TextStyle(color: Color(0xFF1565C0)),
+        prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF1565C0)),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.07),
+        fillColor: const Color(0xFFFFFFFF).withOpacity(0.70), // unchanged
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: Colors.white.withOpacity(0.15)),
+          borderSide: BorderSide(
+              color: const Color(0xFF1565C0).withOpacity(0.20)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFFD700)),
+          borderSide:
+              const BorderSide(color: Color(0xFF0D47A1), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

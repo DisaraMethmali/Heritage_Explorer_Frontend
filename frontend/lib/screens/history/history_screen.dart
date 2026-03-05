@@ -29,14 +29,21 @@ class _HistoryScreenState extends State<HistoryScreen>
   int _offset = 0;
   bool _hasMore = true;
 
-  // Light yellow & blue theme
-  static const Color _pageBg     = Color(0xFFF0F8FF);
-  static const Color _appBarBg   = Color(0xFF1565C0);
-  static const Color _accent     = Color(0xFF1565C0);
-  static const Color _gold       = Color(0xFFFFB300);
-  static const Color _cardBg     = Colors.white;
-  static const Color _border     = Color(0xFFBBDEFB);
-  static const Color _speakBtn   = Color(0xFFFFE082); // light yellow
+  // ── Colour palette (light yellow + blue) ──────────────────────────────────
+  static const Color _pageBg      = Color(0xFFF5F7FF);   // near-white blue tint
+  static const Color _appBarBg    = Color(0xFF0D47A1);   // deep blue AppBar
+  static const Color _accent      = Color(0xFF1565C0);   // primary blue
+  static const Color _accentDark  = Color(0xFF0D47A1);   // darker blue
+  static const Color _yellowLight = Color(0xFFFFF9C4);   // very light yellow bg
+  static const Color _yellowMid   = Color(0xFFFFF176);   // richer yellow accent
+  static const Color _yellowDeep  = Color(0xFFF9A825);   // amber / tab indicator
+  static const Color _cardBg      = Colors.white;
+  static const Color _border      = Color(0xFFBBCEF5);   // soft blue border
+  static const Color _surfaceBlue = Color(0xFFE3F2FD);   // light blue surface
+  static const Color _textPrimary = Color(0xFF0D2150);
+  static const Color _textSub     = Color(0xFF3D5A99);
+  static const Color _textHint    = Color(0xFF8DA5CC);
+  static const Color _speakBtn    = Color(0xFFFFF176);   // light yellow speak btn
 
   @override
   void initState() {
@@ -66,10 +73,9 @@ class _HistoryScreenState extends State<HistoryScreen>
         offset: _offset,
       );
 
-      // ✅ FIX: backend returns 'history', not 'records'
-      final rawList = data['history'] as List?
-          ?? data['records']  as List?
-          ?? data['messages'] as List?
+      final rawList = data['history']  as List?
+          ?? data['records']   as List?
+          ?? data['messages']  as List?
           ?? [];
 
       final newRecords = rawList
@@ -89,7 +95,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load history: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -123,8 +129,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         elevation: 0,
         title: const Text(
           'Chat History',
-          style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -138,9 +143,10 @@ class _HistoryScreenState extends State<HistoryScreen>
         ],
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: _gold,
-          labelColor: _gold,
-          unselectedLabelColor: Colors.white60,
+          indicatorColor: _yellowDeep,
+          indicatorWeight: 3,
+          labelColor: _yellowMid,
+          unselectedLabelColor: Colors.white54,
           tabs: const [
             Tab(text: 'Messages'),
             Tab(text: 'Sessions'),
@@ -169,7 +175,7 @@ class _HistoryScreenState extends State<HistoryScreen>
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
           child: Column(
             children: [
-              // Search
+              // Search field
               Container(
                 decoration: BoxDecoration(
                   color: _pageBg,
@@ -178,18 +184,14 @@ class _HistoryScreenState extends State<HistoryScreen>
                 ),
                 child: TextField(
                   controller: _searchCtrl,
-                  style: const TextStyle(
-                      color: Colors.black87, fontSize: 13),
+                  style: const TextStyle(color: _textPrimary, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'Search messages...',
-                    hintStyle: const TextStyle(
-                        color: Colors.black38, fontSize: 13),
-                    prefixIcon: const Icon(Icons.search,
-                        color: Colors.black38, size: 20),
+                    hintStyle: const TextStyle(color: _textHint, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: _textHint, size: 20),
                     suffixIcon: _searchText != null
                         ? IconButton(
-                            icon: const Icon(Icons.clear,
-                                color: Colors.black38, size: 18),
+                            icon: const Icon(Icons.clear, color: _textHint, size: 18),
                             onPressed: () {
                               _searchCtrl.clear();
                               setState(() => _searchText = null);
@@ -203,8 +205,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                     isDense: true,
                   ),
                   onSubmitted: (v) {
-                    setState(() =>
-                        _searchText = v.trim().isEmpty ? null : v.trim());
+                    setState(() => _searchText = v.trim().isEmpty ? null : v.trim());
                     _loadHistory();
                   },
                 ),
@@ -228,7 +229,7 @@ class _HistoryScreenState extends State<HistoryScreen>
           ),
         ),
 
-        // List
+        // Message list
         Expanded(
           child: _isLoading && _records.isEmpty
               ? const Center(
@@ -251,17 +252,14 @@ class _HistoryScreenState extends State<HistoryScreen>
                         child: ListView.separated(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
-                          itemCount:
-                              _records.length + (_hasMore ? 1 : 0),
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
+                          itemCount: _records.length + (_hasMore ? 1 : 0),
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (_, i) {
                             if (i == _records.length) {
                               return const Center(
                                 child: Padding(
                                   padding: EdgeInsets.all(16),
-                                  child: CircularProgressIndicator(
-                                      color: _accent),
+                                  child: CircularProgressIndicator(color: _accent),
                                 ),
                               );
                             }
@@ -283,7 +281,7 @@ class _HistoryScreenState extends State<HistoryScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
+                color: _surfaceBlue,
                 shape: BoxShape.circle,
                 border: Border.all(color: _border, width: 2),
               ),
@@ -294,12 +292,12 @@ class _HistoryScreenState extends State<HistoryScreen>
             const SizedBox(height: 16),
             const Text('No messages yet',
                 style: TextStyle(
-                    color: Color(0xFF1A237E),
+                    color: _accentDark,
                     fontSize: 16,
                     fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             const Text('Start a chat to see your history here',
-                style: TextStyle(color: Colors.black45, fontSize: 13)),
+                style: TextStyle(color: _textHint, fontSize: 13)),
           ],
         ),
       );
@@ -319,9 +317,8 @@ class _HistoryScreenState extends State<HistoryScreen>
           _loadHistory();
         },
         selectedColor: _accent,
-        backgroundColor: const Color(0xFFE3F2FD),
-        side: BorderSide(
-            color: selected ? _accent : const Color(0xFF90CAF9)),
+        backgroundColor: _surfaceBlue,
+        side: BorderSide(color: selected ? _accent : const Color(0xFF90CAF9)),
         showCheckmark: false,
         padding: const EdgeInsets.symmetric(horizontal: 4),
       ),
@@ -330,7 +327,7 @@ class _HistoryScreenState extends State<HistoryScreen>
 
   // ── History card ──────────────────────────────────────────────────────────
   Widget _buildCard(HistoryRecord record) {
-    final char = AppConstants.characters[record.characterId];
+    final char    = AppConstants.characters[record.characterId];
     final dateStr = DateFormat('MMM d, HH:mm').format(record.timestamp);
 
     return Container(
@@ -341,7 +338,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             color: char?.color.withOpacity(0.3) ?? _border),
         boxShadow: [
           BoxShadow(
-              color: Colors.blue.withOpacity(0.06),
+              color: _accent.withOpacity(0.07),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -351,13 +348,10 @@ class _HistoryScreenState extends State<HistoryScreen>
         children: [
           // Card header
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: char?.color.withOpacity(0.1) ??
-                  const Color(0xFFE3F2FD),
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14)),
+              color: char?.color.withOpacity(0.09) ?? _surfaceBlue,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             ),
             child: Row(
               children: [
@@ -365,8 +359,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: char?.color.withOpacity(0.15) ??
-                        Colors.blue.shade50,
+                    color: char?.color.withOpacity(0.14) ?? _surfaceBlue,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -389,16 +382,14 @@ class _HistoryScreenState extends State<HistoryScreen>
                       ),
                       Text(
                         '$dateStr  •  ${record.topic}',
-                        style: const TextStyle(
-                            color: Colors.black45, fontSize: 11),
+                        style: const TextStyle(color: _textHint, fontSize: 11),
                       ),
                     ],
                   ),
                 ),
                 // Confidence badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(10),
@@ -426,14 +417,13 @@ class _HistoryScreenState extends State<HistoryScreen>
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.person,
-                        color: Color(0xFF1565C0), size: 16),
+                    const Icon(Icons.person, color: _accent, size: 16),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         record.question,
                         style: const TextStyle(
-                          color: Color(0xFF1A237E),
+                          color: _accentDark,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -445,7 +435,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 ),
                 Divider(color: _border, height: 16, thickness: 1),
 
-                // Answer (bot) + speak button
+                // Answer + speak button
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -455,14 +445,11 @@ class _HistoryScreenState extends State<HistoryScreen>
                     Expanded(
                       child: Text(
                         record.answer,
-                        style: const TextStyle(
-                            color: Colors.black54, fontSize: 13),
+                        style: const TextStyle(color: _textSub, fontSize: 13),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-
-                    // ✅ FIX: use Provider, not VoiceService() directly
                     Consumer<VoiceService>(
                       builder: (ctx, voice, _) => GestureDetector(
                         onTap: () => voice.speak(record.answer),
@@ -473,19 +460,18 @@ class _HistoryScreenState extends State<HistoryScreen>
                           decoration: BoxDecoration(
                             color: _speakBtn,
                             shape: BoxShape.circle,
+                            border: Border.all(
+                                color: _yellowDeep.withOpacity(0.6)),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.amber.withOpacity(0.35),
+                                color: _yellowDeep.withOpacity(0.25),
                                 blurRadius: 5,
                                 spreadRadius: 1,
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.volume_up,
-                            size: 17,
-                            color: Colors.black87,
-                          ),
+                          child: const Icon(Icons.volume_up,
+                              size: 17, color: _textPrimary),
                         ),
                       ),
                     ),
@@ -509,7 +495,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             Text('📅', style: TextStyle(fontSize: 48)),
             SizedBox(height: 12),
             Text('No sessions yet',
-                style: TextStyle(color: Colors.black45, fontSize: 15)),
+                style: TextStyle(color: _textHint, fontSize: 15)),
           ],
         ),
       );
@@ -523,36 +509,36 @@ class _HistoryScreenState extends State<HistoryScreen>
         itemCount: _sessions.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (_, i) {
-          final s = _sessions[i] as Map<String, dynamic>;
+          final s       = _sessions[i] as Map<String, dynamic>;
           final lastMsg = s['last_message']?.toString() ?? '';
           String formattedDate = '';
           try {
-            formattedDate = DateFormat('MMM d, HH:mm')
-                .format(DateTime.parse(lastMsg));
+            formattedDate =
+                DateFormat('MMM d, HH:mm').format(DateTime.parse(lastMsg));
           } catch (_) {}
 
           return Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _cardBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _border),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.blue.withOpacity(0.05),
+                    color: _accent.withOpacity(0.05),
                     blurRadius: 6,
                     offset: const Offset(0, 2)),
               ],
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 6),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               leading: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE3F2FD),
+                  color: _yellowLight,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _border),
+                  border: Border.all(color: _yellowDeep.withOpacity(0.4)),
                 ),
                 child: const Center(
                   child: Text('💬', style: TextStyle(fontSize: 22)),
@@ -561,7 +547,7 @@ class _HistoryScreenState extends State<HistoryScreen>
               title: Text(
                 s['session_id']?.toString() ?? '',
                 style: const TextStyle(
-                    color: Color(0xFF1A237E),
+                    color: _accentDark,
                     fontWeight: FontWeight.w600,
                     fontSize: 13),
                 overflow: TextOverflow.ellipsis,
@@ -569,8 +555,7 @@ class _HistoryScreenState extends State<HistoryScreen>
               subtitle: Text(
                 '${s['message_count'] ?? 0} messages'
                 '${formattedDate.isNotEmpty ? '  •  $formattedDate' : ''}',
-                style: const TextStyle(
-                    color: Colors.black45, fontSize: 12),
+                style: const TextStyle(color: _textHint, fontSize: 12),
               ),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline,
@@ -585,8 +570,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                           'Delete all messages in this session?'),
                       actions: [
                         TextButton(
-                            onPressed: () =>
-                                Navigator.pop(context, false),
+                            onPressed: () => Navigator.pop(context, false),
                             child: const Text('Cancel')),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
@@ -620,7 +604,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             Text('📊', style: TextStyle(fontSize: 48)),
             SizedBox(height: 12),
             Text('No stats yet',
-                style: TextStyle(color: Colors.black45, fontSize: 15)),
+                style: TextStyle(color: _textHint, fontSize: 15)),
           ],
         ),
       );
@@ -663,13 +647,19 @@ class _HistoryScreenState extends State<HistoryScreen>
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _cardBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: _border),
+                  boxShadow: [
+                    BoxShadow(
+                        color: _accent.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2)),
+                  ],
                 ),
                 child: Column(
                   children: characters.entries.map((e) {
-                    final char = AppConstants.characters[e.key];
+                    final char  = AppConstants.characters[e.key];
                     final count = (e.value as num).toInt();
                     final maxVal = characters.values
                         .map((v) => (v as num).toInt())
@@ -684,18 +674,16 @@ class _HistoryScreenState extends State<HistoryScreen>
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      char?.name.split(' ').first ??
-                                          e.key,
+                                      char?.name.split(' ').first ?? e.key,
                                       style: const TextStyle(
-                                          color: Color(0xFF1A237E),
+                                          color: _accentDark,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600),
                                     ),
@@ -713,8 +701,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                                   borderRadius: BorderRadius.circular(4),
                                   child: LinearProgressIndicator(
                                     value: pct,
-                                    backgroundColor:
-                                        const Color(0xFFE3F2FD),
+                                    backgroundColor: _surfaceBlue,
                                     valueColor: AlwaysStoppedAnimation(
                                         char?.color ?? _accent),
                                     minHeight: 8,
@@ -744,15 +731,15 @@ class _HistoryScreenState extends State<HistoryScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
+                      color: _yellowLight,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: const Color(0xFF90CAF9)),
+                          color: _yellowDeep.withOpacity(0.45)),
                     ),
                     child: Text(
                       '${e.key}  ${e.value}',
                       style: const TextStyle(
-                          color: Color(0xFF1565C0),
+                          color: _accentDark,
                           fontSize: 12,
                           fontWeight: FontWeight.w500),
                     ),
@@ -767,14 +754,20 @@ class _HistoryScreenState extends State<HistoryScreen>
   }
 
   Widget _statCard(
-      String emoji, String label, String value, Color color) =>
+          String emoji, String label, String value, Color color) =>
       Expanded(
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
+            color: color.withOpacity(0.07),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: color.withOpacity(0.25)),
+            border: Border.all(color: color.withOpacity(0.22)),
+            boxShadow: [
+              BoxShadow(
+                  color: color.withOpacity(0.06),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2)),
+            ],
           ),
           child: Column(
             children: [
@@ -786,8 +779,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                       fontWeight: FontWeight.w800,
                       fontSize: 20)),
               Text(label,
-                  style: const TextStyle(
-                      color: Colors.black45, fontSize: 11)),
+                  style: const TextStyle(color: _textHint, fontSize: 11)),
             ],
           ),
         ),
@@ -806,7 +798,7 @@ class _HistoryScreenState extends State<HistoryScreen>
           const SizedBox(width: 8),
           Text(text,
               style: const TextStyle(
-                  color: Color(0xFF1A237E),
+                  color: _accentDark,
                   fontWeight: FontWeight.w700,
                   fontSize: 15)),
         ],

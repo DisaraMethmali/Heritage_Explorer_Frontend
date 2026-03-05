@@ -47,7 +47,7 @@ class ApiService {
       );
     }
   }
-  
+
   // ── HEALTH ──────────────────────────────────────────────────────────────────
 
   Future<bool> checkHealth() async {
@@ -440,7 +440,18 @@ class ApiService {
     );
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
+Future<List<int>> downloadReport({String location = 'all'}) async {
+  final res = await http.get(
+    Uri.parse('${AppConstants.baseUrl}/report/user?location=$location'),
+    headers: _headers,
+  );
 
+  if (res.statusCode == 401) throw ApiException('Unauthorized', statusCode: 401);
+  if (res.statusCode != 200) throw ApiException('Failed to download report', statusCode: res.statusCode);
+
+  return res.bodyBytes; // <-- Return raw bytes instead of JSON
+}
+    
   
   // ── ADMIN ───────────────────────────────────────────────────────────────────
   // NOTE: All admin methods call /api/admin/* JSON endpoints (NOT the HTML
