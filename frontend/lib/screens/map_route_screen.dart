@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
@@ -32,7 +33,9 @@ class MapRouteScreen extends StatefulWidget {
   State<MapRouteScreen> createState() => _MapRouteScreenState();
 }
 
-class _MapRouteScreenState extends State<MapRouteScreen> {
+class _MapRouteScreenState extends State<MapRouteScreen>
+    with TickerProviderStateMixin {
+
   late GoogleMapController mapController;
   final Completer<GoogleMapController> _controller = Completer();
 
@@ -43,20 +46,48 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
 
   StreamSubscription<Position>? positionStream; // REAL-TIME TRACKING
 
+  bool _isLoadingRoute = false;
+
   // Google Maps Directions API Key
   static const String googleAPIKey = "AIzaSyCmDTmBIMU9QquyjZiYpsgnnQ0mg3QkrwA";
+
+  // ── Design tokens (from profile_screen) ───────────────────────────────────
+  static const Color _navy     = Color(0xFF001233);
+  static const Color _navyMid  = Color(0xFF002D72);
+  static const Color _blue     = Color(0xFF023E8A);
+  static const Color _gold     = Color(0xFFFFD700);
+  static const Color _goldDeep = Color(0xFFFFB800);
+  static const Color _textMain = Color(0xFF001845);
+  static const Color _textSub  = Color(0xFF90A4C4);
+
+  // ── Animations ─────────────────────────────────────────────────────────────
+  late AnimationController _shimmerController;
+  late Animation<double>   _shimmer;
 
   @override
   void initState() {
     super.initState();
     polylinePoints = PolylinePoints();
 
+    _shimmerController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2400))
+      ..repeat();
+    _shimmer = Tween<double>(begin: -1.5, end: 2.5).animate(
+        CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut));
+
     _addStaticMarkers(); // user + heritage markers
     _loadPolyline();     // load route polyline
     _startTrackingUser(); // start real-time GPS tracking
   }
 
-  // ADD MARKERS
+  @override
+  void dispose() {
+    positionStream?.cancel(); // stop GPS tracking when leaving screen
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  // ADD MARKERS (logic unchanged)
   void _addStaticMarkers() {
     // USER MARKER
     _markers.add(
@@ -82,8 +113,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     setState(() {});
   }
 
-  // REAL-TIME GPS TRACKING (stream)
-  // updates blue dot on map every 1 meter movement
+  // REAL-TIME GPS TRACKING (logic unchanged)
   void _startTrackingUser() async {
     LocationSettings settings = const LocationSettings(
       accuracy: LocationAccuracy.high,
@@ -115,8 +145,9 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     });
   }
 
-  // GET GOOGLE POLYLINE
+  // GET GOOGLE POLYLINE (logic unchanged)
   Future<void> _loadPolyline() async {
+    setState(() => _isLoadingRoute = true);
     try {
       final url =
           "https://maps.googleapis.com/maps/api/directions/json?"
@@ -158,10 +189,12 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
       );
     } catch (e) {
       debugPrint("Error loading route: $e");
+    } finally {
+      setState(() => _isLoadingRoute = false);
     }
   }
 
-  // MANUAL REFRESH FOR ROUTE + MARKERS
+  // MANUAL REFRESH FOR ROUTE + MARKERS (logic unchanged)
   Future<void> _refreshRoute() async {
     // Clear old polyline
     _polylineCoords.clear();
@@ -176,7 +209,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     setState(() {});
   }
 
-  // OPEN GOOGLE MAPS FOR TURN-BY-TURN NAVIGATION
+  // OPEN GOOGLE MAPS FOR TURN-BY-TURN NAVIGATION (logic unchanged)
   Future<void> _openGoogleMapsNavigation() async {
     final url =
         "google.navigation:q=${widget.destLat},${widget.destLon}&mode=d";
@@ -191,33 +224,90 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    positionStream?.cancel(); // stop GPS tracking when leaving screen
-    super.dispose();
-  }
-
   // BUILD UI
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent));
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F8FF),
+
+      // ── AppBar (matches profile_screen style) ─────────────────────────────
       appBar: AppBar(
-        centerTitle: true,
-        title: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            "Route to ${widget.siteName}",
-            style: const TextStyle(fontWeight: FontWeight.bold),
+        backgroundColor: _navy,
+        elevation: 0,
+        centerTitle: false,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: _gold.withValues(alpha: 0.6), width: 1),
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+            child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 14),
           ),
         ),
-        backgroundColor: const Color(0xFF004C7A),
-        foregroundColor: Colors.white,
+        title: Row(children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: _gold, width: 1.5),
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+            child: const Icon(Icons.map_outlined, size: 16, color: _gold),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'ROUTE MAP',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.siteName,
+                    style: const TextStyle(
+                      color: _gold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(3),
+          child: Container(
+            height: 3,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [_gold, Color(0xFFFFA500), _gold]),
+            ),
+          ),
+        ),
       ),
 
-      // GOOGLE MAP WIDGET — SHOWS MARKERS + POLYLINE ROUTE
-      body: SafeArea(      // prevents UI from being covered at bottom
+      body: SafeArea(
         child: Stack(
           children: [
+            // ── Google Map ─────────────────────────────────────────────────
             GoogleMap(
               initialCameraPosition: CameraPosition(
                 target: LatLng(widget.userLat, widget.userLon),
@@ -227,7 +317,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
               polylines: {
                 Polyline(
                   polylineId: const PolylineId("route"),
-                  color: const Color(0xFF004C7A),
+                  color: _navyMid,
                   width: 5,
                   points: _polylineCoords,
                 ),
@@ -241,37 +331,158 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
               },
             ),
 
-            // FLOATING REFRESH BUTTON
+            // ── Route loading indicator ────────────────────────────────────
+            if (_isLoadingRoute)
+              Positioned(
+                top: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: _gold.withValues(alpha: 0.4)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _navyMid.withValues(alpha: 0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      SizedBox(
+                        width: 14, height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _goldDeep,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Loading route…',
+                        style: TextStyle(
+                          color: _textMain,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ]),
+                  ),
+                ),
+              ),
+
+            // ── Refresh button (top-right) ─────────────────────────────────
             Positioned(
-              top: 60,
-              right: 10,
-              child: FloatingActionButton(
-                heroTag: "refreshRoute",
-                backgroundColor: Colors.white,
-                elevation: 4,
-                onPressed: _refreshRoute,
-                child: const Icon(Icons.refresh, color: Colors.blue, size: 28),
+              top: 16,
+              right: 12,
+              child: GestureDetector(
+                onTap: _refreshRoute,
+                child: Container(
+                  width: 46, height: 46,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _gold.withValues(alpha: 0.5), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _navyMid.withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.refresh_rounded, color: _navyMid, size: 22),
+                ),
               ),
             ),
 
-            // START NAVIGATION BUTTON
+            // ── Start Navigation button (bottom) ──────────────────────────
             Positioned(
               bottom: 20,
-              left: 40,
+              left: 60,
               right: 60,
-              child: ElevatedButton.icon(
-                onPressed: _openGoogleMapsNavigation,
-                icon: const Icon(Icons.navigation),
-                label: const Text("Start Navigation (Google Maps)"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+              child: GestureDetector(
+                onTap: _openGoogleMapsNavigation,
+                child: Container(
+                  height: 54,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: const LinearGradient(
+                      colors: [_goldDeep, _gold, Color(0xFFFFC200)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _gold.withValues(alpha: 0.4),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Container(
+                      width: 25, height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _navy.withValues(alpha: 0.12),
+                      ),
+                      child: const Icon(Icons.navigation_rounded, color: _navy, size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "Start Navigation",
+                      style: TextStyle(
+                        color: _navy,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ]),
                 ),
+              ),
+            ),
+
+            // ── Destination info chip (bottom-left above button) ───────────
+            Positioned(
+              bottom: 86,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: _gold.withValues(alpha: 0.45), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _navyMid.withValues(alpha: 0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                    width: 22, height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _gold.withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(Icons.location_on_rounded, color: _goldDeep, size: 13),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    widget.siteName,
+                    style: const TextStyle(
+                      color: _textMain,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ]),
               ),
             ),
           ],

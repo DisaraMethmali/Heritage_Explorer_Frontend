@@ -1,3 +1,3 @@
 // frontend/lib/utils/config.dart
 
-const String baseUrl = "https://doctorless-decussately-kirsten.ngrok-free.dev";
+const String baseUrl = "http://192.168.8.185:8000";

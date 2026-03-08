@@ -1,10 +1,13 @@
 // frontend/lib/screens/recommendation_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../state/recommendation_state.dart';
 import '../services/location_monitor.dart';
 import '../state/user_location_state.dart';
 import 'map_route_screen.dart';
+import 'area_search_result_screen.dart';
+import 'site_search_screen.dart';
 
 class RecommendationScreen extends StatefulWidget {
   const RecommendationScreen({super.key});
@@ -13,80 +16,264 @@ class RecommendationScreen extends StatefulWidget {
   State<RecommendationScreen> createState() => _RecommendationScreenState();
 }
 
-class _RecommendationScreenState extends State<RecommendationScreen> {
+class _RecommendationScreenState extends State<RecommendationScreen>
+    with TickerProviderStateMixin {
+  // ── Animations ─────────────────────────────────────────────────────────────
+  late AnimationController _shimmerController;
+  late AnimationController _contentController;
+  late Animation<double> _shimmer;
+  late Animation<double> _contentFade;
+  late Animation<Offset> _contentSlide;
 
-  // Pull-to-refresh handler
-  Future<void> _onRefresh() async {
-    await LocationMonitor.checkOnce();
-    setState(() {}); // rebuild UI with updated recommendation
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2400))
+      ..repeat();
+    _contentController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700))
+      ..forward();
+
+    _shimmer = Tween<double>(begin: -1.5, end: 2.5).animate(
+        CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut));
+    _contentFade =
+        CurvedAnimation(parent: _contentController, curve: Curves.easeOut);
+    _contentSlide =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+            CurvedAnimation(
+                parent: _contentController, curve: Curves.easeOutCubic));
   }
 
   @override
+  void dispose() {
+    _shimmerController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  // ── Logic (unchanged) ──────────────────────────────────────────────────────
+  Future<void> _onRefresh() async {
+    await LocationMonitor.checkOnce();
+    setState(() {});
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
+  @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light.copyWith(
+      statusBarColor: Colors.transparent,
+    ));
+
     final hasData = RecommendationState.hasRecommendation;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF6EC),
-
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF004C7A),
-        foregroundColor: Colors.white,
-        centerTitle: true,
-        elevation: 4,
-        title: const Text(
-          "Recommended for You",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _onRefresh,
-          child: hasData
-              ? _buildRecommendationContent()
-              : _buildEmptyState(),
+      backgroundColor: const Color(0xFFF5F8FF),
+      extendBodyBehindAppBar: true,
+      appBar: _buildAppBar(),
+      body: FadeTransition(
+        opacity: _contentFade,
+        child: SlideTransition(
+          position: _contentSlide,
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: const Color(0xFFFFD700),
+              backgroundColor: const Color(0xFF002D72),
+              child: hasData
+                  ? _buildRecommendationContent()
+                  : _buildEmptyState(),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // EMPTY STATE (No recommendation)
+  // ── AppBar ─────────────────────────────────────────────────────────────────
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFF001233),
+      elevation: 0,
+      centerTitle: false,
+      systemOverlayStyle: SystemUiOverlayStyle.light,
+      title: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+            child: const Icon(Icons.auto_awesome,
+                size: 16, color: Color(0xFFFFD700)),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Text(
+                'RECOMMENDED FOR YOU',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              Text(
+                'Heritage Sites',
+                style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        _AppBarIconBtn(
+          icon: Icons.location_on_outlined,
+          onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const AreaSearchResultScreen())),
+        ),
+        _AppBarIconBtn(
+          icon: Icons.account_balance_outlined,
+          onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const SiteSearchScreen())),
+        ),
+        const SizedBox(width: 8),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(3),
+        child: Container(
+          height: 3,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFFD700)],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Empty State ────────────────────────────────────────────────────────────
   Widget _buildEmptyState() {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-            ),
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.all(30),
+                padding: const EdgeInsets.all(36),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(
-                      Icons.travel_explore,
-                      size: 80,
-                      color: Color(0xFF004C7A),
+                  children: [
+                    // Medallion
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: const Color(0xFFFFD700)
+                                    .withValues(alpha: 0.15),
+                                width: 1),
+                          ),
+                        ),
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: const Color(0xFFFFD700)
+                                    .withValues(alpha: 0.35),
+                                width: 1.5),
+                          ),
+                        ),
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const RadialGradient(
+                              colors: [Color(0xFF0A4FA3), Color(0xFF001845)],
+                              center: Alignment(-0.3, -0.3),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFD700)
+                                    .withValues(alpha: 0.25),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.travel_explore,
+                              size: 34, color: Color(0xFFFFD700)),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 20),
-                    Text(
-                      "No recommendations yet",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF004C7A),
+
+                    const SizedBox(height: 28),
+
+                    // Gold pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700).withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                            color:
+                                const Color(0xFFFFD700).withValues(alpha: 0.4),
+                            width: 1),
+                      ),
+                      child: const Text(
+                        'NO RECOMMENDATIONS YET',
+                        style: TextStyle(
+                          color: Color(0xFFB8860B),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.8,
+                        ),
                       ),
                     ),
-                    SizedBox(height: 12),
-                    Text(
-                      "Pull to refresh or move closer to a heritage site to discover ancient events around you.",
+
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Nothing to show yet',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF002D72),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    const Text(
+                      'Pull to refresh or move closer to a heritage site to discover ancient events around you.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
+                        fontSize: 14,
+                        color: Color(0xFF90A4C4),
+                        height: 1.6,
                       ),
                     ),
                   ],
@@ -99,587 +286,773 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     );
   }
 
-  // SAFETY BADGE
+  // ── Safety Badge ───────────────────────────────────────────────────────────
   Widget _buildSafetyBadge(String status) {
-    Color bgColor;
-    Color textColor;
-
+    Color bg, fg;
+    IconData icon;
     switch (status) {
       case "SAFE":
-        bgColor = Colors.green.shade100;
-        textColor = Colors.green.shade800;
+        bg = const Color(0xFFE8F5E9);
+        fg = const Color(0xFF2E7D32);
+        icon = Icons.shield_outlined;
         break;
       case "CAUTION":
-        bgColor = Colors.orange.shade100;
-        textColor = Colors.orange.shade800;
+        bg = const Color(0xFFFFF8E1);
+        fg = const Color(0xFFE65100);
+        icon = Icons.warning_amber_outlined;
         break;
       case "UNSAFE":
-        bgColor = Colors.red.shade100;
-        textColor = Colors.red.shade800;
+        bg = const Color(0xFFFFEBEE);
+        fg = const Color(0xFFC62828);
+        icon = Icons.dangerous_outlined;
         break;
       default:
-        bgColor = Colors.grey.shade200;
-        textColor = Colors.grey.shade800;
+        bg = const Color(0xFFF5F5F5);
+        fg = const Color(0xFF616161);
+        icon = Icons.info_outline;
     }
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: fg.withValues(alpha: 0.3), width: 1),
       ),
-      child: Text(
-        status,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: textColor,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 5),
+          Text(status,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: fg,
+                  letterSpacing: 0.8)),
+        ],
       ),
     );
   }
 
-  // MAIN CONTENT (TOP 3 SITES)
+  // ── Main Content ───────────────────────────────────────────────────────────
   Widget _buildRecommendationContent() {
     final sites = RecommendationState.recommendedSites;
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // Recommendation Message Banner
-          if (RecommendationState.recommendationMessage != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE3F2FD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        RecommendationState.recommendationMessage!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          // ── Recommendation message banner ────────────────────────────
+          if (RecommendationState.recommendationMessage != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF4FF),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: const Color(0xFF002D72).withValues(alpha: 0.15),
+                    width: 1),
               ),
-
-          // TOP 3 CARDS
-          ...sites.map((site) {
-            final List<Map<String, dynamic>> events =
-                List<Map<String, dynamic>>.from(site["events"] ?? []);
-
-            final bool isHighlighted =
-                site["site_id"] == RecommendationState.highlightSiteId;
-
-            return Card(
-              elevation: 8,
-              margin: const EdgeInsets.only(bottom: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-
-              // Highlight Background
-              color: isHighlighted
-                  ? const Color(0xFFE8F5E9)
-                  : Colors.white,
-
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    // SITE NAME 
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          site["site_name"],
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF004C7A),
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        // Safety Badge
-                        if (site["safety_status"] != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: _buildSafetyBadge(site["safety_status"]),
-                          ),
-
-                        // DISTANCE
-                        if (site["road_distance_km"] != null)
-                          Text(
-                            "Distance: ${site["road_distance_km"]} km",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
-                          ),
-
-                        // WEATHER SECTION
-                        if (site["weather"] != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Row(
-                              children: [
-
-                                if (site["weather"]["icon"] != null)
-                                  Image.network(
-                                    "https:${site["weather"]["icon"]}",
-                                    width: 40,
-                                    height: 40,
-                                  ),
-
-                                const SizedBox(width: 8),
-
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "${site["weather"]["condition"]}",
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        "${site["weather"]["temperature_c"] ?? "--"}°C • "
-                                        "Humidity ${site["weather"]["humidity"] ?? "--"}% • "
-                                        "Wind ${site["weather"]["wind_kph"] ?? "--"} km/h",
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // DISASTER STATUS SECTION
-                        if (site["disaster"] != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  site["disaster"]["has_alert"] == true
-                                      ? Icons.warning
-                                      : Icons.check_circle,
-                                  color: site["disaster"]["has_alert"] == true
-                                      ? (site["disaster"]["risk_level"] == "High"
-                                          ? Colors.red
-                                          : Colors.orange)
-                                      : Colors.green,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    site["disaster"]["has_alert"] == true
-                                        ? (site["disaster"]["message"] ?? "Weather Alert")
-                                        : "No active disaster alerts",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: site["disaster"]["has_alert"] == true
-                                          ? (site["disaster"]["risk_level"] == "High"
-                                              ? Colors.red.shade800
-                                              : Colors.orange.shade800)
-                                          : Colors.green.shade800,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // STATIC DESCRIPTION
-                    const Text(
-                      "A historically significant landmark rich in cultural and architectural heritage.",
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // EVENTS HEADER
-                    const Text(
-                      "Ancient Events",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFB8860B),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // EVENTS LIST
-                    if (events.isEmpty)
-                      const Text(
-                        "No recorded events for this site.",
-                        style: TextStyle(color: Colors.black54),
-                      )
-                    else
-                      Column(
-                        children: events.map((e) {
-                          return Card(
-                            elevation: 4,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-
-                                  // EVENT TITLE
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.history_edu,
-                                        color: Color(0xFF004C7A),
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          e["event_name"] ?? "Untitled Event",
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF004C7A),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  if (e["year"] != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        e["year"].toString(),
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontStyle: FontStyle.italic,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ),
-
-                                  const SizedBox(height: 8),
-
-                                  // EVENT DESCRIPTION
-                                  Text(
-                                    e["description"] ??
-                                        "No description available for this event.",
-                                    textAlign: TextAlign.justify,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      height: 1.5,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-
-                    const SizedBox(height: 20),
-
-                    // ROUTE BUTTON AT BOTTOM CENTER
-                    Center(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF004C7A),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        icon: const Icon(Icons.directions, size: 20),
-                        label: const Text(
-                          "View Route",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () {
-                          if (UserLocationState.userLat == null ||
-                              UserLocationState.userLon == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("User location not available."),
-                              ),
-                            );
-                            return;
-                          }
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MapRouteScreen(
-                                userLat: UserLocationState.userLat!,
-                                userLon: UserLocationState.userLon!,
-                                destLat: site["lat"],
-                                destLon: site["lon"],
-                                siteName: site["site_name"],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-
-          // Alternative Suggestion (Full Alternative Card)
-          if (RecommendationState.alternativeSite != null) ...[
-
-            const SizedBox(height: 30),
-
-            const Divider(thickness: 1.2),
-
-            const SizedBox(height: 12),
-
-            const Text(
-              "Safer Alternative Recommendation",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1B5E20),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            _buildAlternativeFullCard(
-              RecommendationState.alternativeSite!,
-            ),
-          ],
-        ]
-      ),
-    );
-  }
-
-  Widget _buildAlternativeFullCard(Map<String, dynamic> site) {
-    final List<Map<String, dynamic>> events =
-        List<Map<String, dynamic>>.from(site["events"] ?? []);
-
-    return Card(
-      elevation: 10,
-      margin: const EdgeInsets.only(bottom: 24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: Colors.green.shade700,
-          width: 2,
-        ),
-      ),
-      color: Colors.green.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            // Title
-            Text(
-              site["site_name"],
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0000FF),
-              ),
-            ),
-
-            const SizedBox(height: 6),
-
-            // Safety Badge
-            if (site["safety_status"] != null)
-              _buildSafetyBadge(site["safety_status"]),
-
-            const SizedBox(height: 8),
-
-            // Distance
-            Text(
-              "Distance: ${site["road_distance_km"]} km",
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Weather
-            if (site["weather"] != null)
-              Row(
+              child: Row(
                 children: [
-                  if (site["weather"]["icon"] != null)
-                    Image.network(
-                      "https:${site["weather"]["icon"]}",
-                      width: 40,
-                      height: 40,
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF002D72).withValues(alpha: 0.08),
                     ),
-                  const SizedBox(width: 8),
+                    child: const Icon(Icons.info_outline,
+                        color: Color(0xFF002D72), size: 18),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      "${site["weather"]["condition"]} • "
-                      "${site["weather"]["temperature_c"] ?? "--"}°C • "
-                      "Humidity ${site["weather"]["humidity"] ?? "--"}% • "
-                      "Wind ${site["weather"]["wind_kph"] ?? "--"} km/h",
-                      style: const TextStyle(fontSize: 13),
+                      RecommendationState.recommendationMessage!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF223355),
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
               ),
+            ),
+          ],
 
-            const SizedBox(height: 12),
+          // ── Section label ────────────────────────────────────────────
+          _SectionLabel(label: 'TOP HERITAGE SITES'),
+          const SizedBox(height: 14),
 
-            // Disaster
-            if (site["disaster"] != null)
-              Text(
-                site["disaster"]["has_alert"] == true
-                    ? site["disaster"]["message"] ?? "Weather Alert"
-                    : "No active disaster alerts",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: site["disaster"]["has_alert"] == true
-                      ? (site["disaster"]["risk_level"] == "High"
-                          ? Colors.red
-                          : Colors.orange)
-                      : Colors.green,
+          // ── Site cards ───────────────────────────────────────────────
+          ...sites.map((site) {
+            final List<Map<String, dynamic>> events =
+                List<Map<String, dynamic>>.from(site["events"] ?? []);
+            final bool isHighlighted =
+                site["site_id"] == RecommendationState.highlightSiteId;
+
+            return _SiteCard(
+              site: site,
+              events: events,
+              isHighlighted: isHighlighted,
+              safetyBadgeBuilder: _buildSafetyBadge,
+              onRoute: () => _navigateToRoute(context, site),
+            );
+          }),
+
+          // ── Alternative site ─────────────────────────────────────────
+          if (RecommendationState.alternativeSite != null) ...[
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        Colors.transparent,
+                        Color(0xFF2E7D32),
+                      ]),
+                    ),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
+                          width: 1),
+                    ),
+                    child: const Text(
+                      'SAFER ALTERNATIVE',
+                      style: TextStyle(
+                        color: Color(0xFF1B5E20),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        Color(0xFF2E7D32),
+                        Colors.transparent,
+                      ]),
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 16),
 
-            const Text(
-              "Ancient Events",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFB8860B),
+            _buildAlternativeFullCard(RecommendationState.alternativeSite!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _navigateToRoute(BuildContext context, Map<String, dynamic> site) {
+    if (UserLocationState.userLat == null || UserLocationState.userLon == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User location not available.")),
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapRouteScreen(
+          userLat: UserLocationState.userLat!,
+          userLon: UserLocationState.userLon!,
+          destLat: site["lat"],
+          destLon: site["lon"],
+          siteName: site["site_name"],
+        ),
+      ),
+    );
+  }
+
+  // ── Alternative full card ──────────────────────────────────────────────────
+  Widget _buildAlternativeFullCard(Map<String, dynamic> site) {
+    final List<Map<String, dynamic>> events =
+        List<Map<String, dynamic>>.from(site["events"] ?? []);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2E7D32).withValues(alpha: 0.10),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Green top bar
+          Container(
+            height: 4,
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              gradient: LinearGradient(
+                colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
               ),
             ),
+          ),
 
-            const SizedBox(height: 8),
-
-            if (events.isEmpty)
-              const Text(
-                "No recorded events.",
-                style: TextStyle(color: Colors.black54),
-              )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: events.map((e) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-
-                        // Event Name + Year
-                        Text(
-                          e["year"] != null
-                              ? "${e["event_name"]} (${e["year"]})"
-                              : e["event_name"] ?? "Untitled Event",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        // Description
-                        Text(
-                          e["description"] ?? "",
-                          textAlign: TextAlign.justify,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            height: 1.4,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-
-            const SizedBox(height: 20),
-
-            // View Route Button
-            Center(
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0000FF),
-                  foregroundColor: Colors.white,
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Site name
+                Text(
+                  site["site_name"],
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF002D72),
+                    letterSpacing: -0.3,
+                  ),
                 ),
-                icon: const Icon(Icons.directions),
-                label: const Text("View Route"),
-                onPressed: () {
-                  if (UserLocationState.userLat == null ||
-                      UserLocationState.userLon == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("User location not available."),
-                      ),
-                    );
-                    return;
-                  }
 
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MapRouteScreen(
-                        userLat: UserLocationState.userLat!,
-                        userLon: UserLocationState.userLon!,
-                        destLat: site["lat"],
-                        destLon: site["lon"],
-                        siteName: site["site_name"],
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    if (site["safety_status"] != null)
+                      _buildSafetyBadge(site["safety_status"]),
+                    const SizedBox(width: 10),
+                    if (site["road_distance_km"] != null)
+                      Text(
+                        "${site["road_distance_km"]} km away",
+                        style: const TextStyle(
+                            fontSize: 13, color: Color(0xFF90A4C4)),
+                      ),
+                  ],
+                ),
+
+                // Weather
+                if (site["weather"] != null) ...[
+                  const SizedBox(height: 14),
+                  _WeatherRow(weather: site["weather"]),
+                ],
+
+                // Disaster
+                if (site["disaster"] != null) ...[
+                  const SizedBox(height: 10),
+                  _DisasterRow(disaster: site["disaster"]),
+                ],
+
+                const SizedBox(height: 18),
+                _SectionLabel(label: 'ANCIENT EVENTS'),
+                const SizedBox(height: 12),
+
+                if (events.isEmpty)
+                  const Text("No recorded events.",
+                      style: TextStyle(color: Color(0xFF90A4C4)))
+                else
+                  Column(
+                    children: events
+                        .map((e) => _EventTile(event: e, accentColor: const Color(0xFF002D72)))
+                        .toList(),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // View Route button
+                _RouteButton(
+                  label: 'View Route',
+                  color: const Color(0xFF002D72),
+                  onTap: () => _navigateToRoute(context, site),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Site Card ─────────────────────────────────────────────────────────────────
+
+class _SiteCard extends StatelessWidget {
+  final Map<String, dynamic> site;
+  final List<Map<String, dynamic>> events;
+  final bool isHighlighted;
+  final Widget Function(String) safetyBadgeBuilder;
+  final VoidCallback onRoute;
+
+  const _SiteCard({
+    required this.site,
+    required this.events,
+    required this.isHighlighted,
+    required this.safetyBadgeBuilder,
+    required this.onRoute,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: isHighlighted
+            ? Border.all(
+                color: const Color(0xFFFFD700).withValues(alpha: 0.6), width: 1.5)
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF002D72).withValues(alpha: 0.09),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Gold top accent bar
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              gradient: LinearGradient(
+                colors: isHighlighted
+                    ? [const Color(0xFFFFD700), const Color(0xFFFFA500)]
+                    : [const Color(0xFF002D72), const Color(0xFF0077B6)],
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Site name + highlighted badge
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        site["site_name"],
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF002D72),
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ),
-                  );
-                },
+                    if (isHighlighted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+                              width: 1),
+                        ),
+                        child: const Text(
+                          'BEST',
+                          style: TextStyle(
+                            color: Color(0xFFB8860B),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // Safety + distance row
+                Row(
+                  children: [
+                    if (site["safety_status"] != null)
+                      safetyBadgeBuilder(site["safety_status"]),
+                    const SizedBox(width: 10),
+                    if (site["road_distance_km"] != null)
+                      Text(
+                        "${site["road_distance_km"]} km away",
+                        style: const TextStyle(
+                            fontSize: 13, color: Color(0xFF90A4C4)),
+                      ),
+                  ],
+                ),
+
+                // Weather
+                if (site["weather"] != null) ...[
+                  const SizedBox(height: 12),
+                  _WeatherRow(weather: site["weather"]),
+                ],
+
+                // Disaster
+                if (site["disaster"] != null) ...[
+                  const SizedBox(height: 10),
+                  _DisasterRow(disaster: site["disaster"]),
+                ],
+
+                const SizedBox(height: 14),
+
+                // Static description
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F6FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    "A historically significant landmark rich in cultural and architectural heritage.",
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF445577),
+                        height: 1.5),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                _SectionLabel(label: 'ANCIENT EVENTS'),
+                const SizedBox(height: 12),
+
+                if (events.isEmpty)
+                  const Text("No recorded events for this site.",
+                      style: TextStyle(color: Color(0xFF90A4C4)))
+                else
+                  Column(
+                    children: events
+                        .map((e) => _EventTile(
+                            event: e, accentColor: const Color(0xFF002D72)))
+                        .toList(),
+                  ),
+
+                const SizedBox(height: 20),
+
+                _RouteButton(
+                  label: 'View Route',
+                  color: const Color(0xFF002D72),
+                  onTap: onRoute,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Shared small widgets ──────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 14,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFD700),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(label,
+            style: const TextStyle(
+              color: Color(0xFF002D72),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2.5,
+            )),
+      ],
+    );
+  }
+}
+
+class _AppBarIconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _AppBarIconBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(left: 8, top: 10, bottom: 10),
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: const Color(0xFFFFD700).withValues(alpha: 0.45), width: 1),
+          color: Colors.white.withValues(alpha: 0.06),
+        ),
+        child: Icon(icon, color: const Color(0xFFFFD700), size: 17),
+      ),
+    );
+  }
+}
+
+class _WeatherRow extends StatelessWidget {
+  final Map<String, dynamic> weather;
+  const _WeatherRow({required this.weather});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F6FF),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          if (weather["icon"] != null)
+            Image.network("https:${weather["icon"]}", width: 36, height: 36),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  weather["condition"] ?? "",
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF223355)),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${weather["temperature_c"] ?? "--"}°C  ·  "
+                  "Humidity ${weather["humidity"] ?? "--"}%  ·  "
+                  "Wind ${weather["wind_kph"] ?? "--"} km/h",
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF90A4C4)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DisasterRow extends StatelessWidget {
+  final Map<String, dynamic> disaster;
+  const _DisasterRow({required this.disaster});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAlert = disaster["has_alert"] == true;
+    final isHigh = disaster["risk_level"] == "High";
+    final Color color = hasAlert
+        ? (isHigh ? const Color(0xFFC62828) : const Color(0xFFE65100))
+        : const Color(0xFF2E7D32);
+    final Color bg = hasAlert
+        ? (isHigh ? const Color(0xFFFFEBEE) : const Color(0xFFFFF8E1))
+        : const Color(0xFFE8F5E9);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasAlert ? Icons.warning_amber_outlined : Icons.check_circle_outline,
+            size: 18,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              hasAlert
+                  ? disaster["message"] ?? "Weather Alert"
+                  : "No active disaster alerts",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EventTile extends StatelessWidget {
+  final Map<String, dynamic> event;
+  final Color accentColor;
+  const _EventTile({required this.event, required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: const Color(0xFF002D72).withValues(alpha: 0.08), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.history_edu, color: accentColor, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event["event_name"] ?? "Untitled Event",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: accentColor,
+                      ),
+                    ),
+                    if (event["year"] != null)
+                      Text(
+                        event["year"].toString(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: Color(0xFF90A4C4),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            event["description"] ?? "No description available for this event.",
+            textAlign: TextAlign.justify,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: Color(0xFF445577),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _RouteButton(
+      {required this.label, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 52,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: LinearGradient(
+            colors: [color, color.withValues(alpha: 0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.30),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.12),
+              ),
+              child: const Icon(Icons.directions_outlined,
+                  color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
               ),
             ),
           ],
