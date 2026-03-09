@@ -14,11 +14,11 @@ class AppConstants {
       color: Color(0xFFFFB300),    // amber gold
       accentColor: Color(0xFFFFF9C4), // light yellow
     ),
-    'guide': CharacterInfo(
-      id: 'guide',
-      name: 'Heritage Guide',
-      title: 'Your Cultural Companion',
-      emoji: '🏛️',
+    'citizen': CharacterInfo(
+      id: 'citizen',
+      name: 'Citizen',
+      title: 'Local Resident',
+      emoji: '👤',
       color: Color(0xFF1565C0),    // deep blue
       accentColor: Color(0xFFE3F2FD), // light blue
     ),

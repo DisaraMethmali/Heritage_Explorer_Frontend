@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         'Welcome to\nHeritage Explorer',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 32,
+                          fontSize: 26,
                           fontWeight: FontWeight.w800,
                           height: 1.15,
                           letterSpacing: -0.5,

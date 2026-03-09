@@ -337,7 +337,26 @@ class ApiService {
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     return (data['leaderboard'] as List?) ?? [];
   }
+// ── PREDICTED TOPICS ────────────────────────────────────────────────────────
 
+Future<Map<String, dynamic>> predictTopics({
+  required String sessionId,
+  required String currentTopic,
+  required String characterId,
+  int topN = 5,
+}) async {
+  final res = await http.post(
+    Uri.parse('${AppConstants.baseUrl}/predict/topics'),
+    headers: _headers,
+    body: jsonEncode({
+      'session_id': sessionId,
+      'current_topic': currentTopic,
+      'character_id': characterId,
+      'top_n': topN,
+    }),
+  );
+  return jsonDecode(res.body) as Map<String, dynamic>;
+}
   // ── EXPERTISE ───────────────────────────────────────────────────────────────
 
   Future<void> setExpertiseLevel(String sessionId, String level) async {

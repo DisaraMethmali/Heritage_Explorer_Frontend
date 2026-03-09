@@ -46,9 +46,11 @@ class _ExploreScreenState extends State<ExploreScreen>
   Map<String, dynamic>? _anomalyResult;
   bool _loadingAnomaly = false;
 
-  Map<String, dynamic> _vrSites = {};
-  bool _loadingVr = false;
-
+ 
+List<dynamic> _predictions = [];
+bool _loadingPredictions = false;
+String _selectedTopic = 'temple';
+String _selectedCharacter = 'king';
   // Animations
   late AnimationController _shimmerController;
   late Animation<double>   _shimmer;
@@ -63,7 +65,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     _shimmer = Tween<double>(begin: -1.5, end: 2.5).animate(
         CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut));
     _loadLegends();
-    _loadVrSites();
+    _loadPredictions();
   }
 
   @override
@@ -90,22 +92,22 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
   }
 
-  Future<void> _loadVrSites() async {
-    setState(() => _loadingVr = true);
-    try {
-      final data = await _api.discoverVrSites(
-        sessionId: 'explore',
-        currentTopic: 'general',
-        characterId: 'citizen',
-      );
-      setState(() {
-        _vrSites = {'suggestions': data['suggestions'] ?? []};
-        _loadingVr = false;
-      });
-    } catch (_) {
-      setState(() => _loadingVr = false);
-    }
+  Future<void> _loadPredictions() async {
+  setState(() => _loadingPredictions = true);
+  try {
+    final data = await _api.predictTopics(
+      sessionId: 'explore',
+      currentTopic: _selectedTopic,
+      characterId: _selectedCharacter,
+    );
+    setState(() {
+      _predictions = data['predictions'] as List? ?? [];
+      _loadingPredictions = false;
+    });
+  } catch (_) {
+    setState(() => _loadingPredictions = false);
   }
+}
 
   Future<void> _fetchCausalChain(String query) async {
     if (query.trim().isEmpty) return;
@@ -151,7 +153,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                 _buildLegendsTab(),
                 _buildCausalTab(),
                 _buildAnomalyTab(),
-                _buildVrTab(),
+                _buildPredictionsTab(),
               ],
             ),
           ),
@@ -172,7 +174,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         children: [
           Container(
             width: 34,
-            height: 34,
+            height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: _gold, width: 1.5),
@@ -238,7 +240,7 @@ class _ExploreScreenState extends State<ExploreScreen>
               Tab(text: '📖  LEGENDS'),
               Tab(text: '⛓  CAUSAL CHAINS'),
               Tab(text: '⚠  FACT CHECK'),
-              Tab(text: '🏛  VR SITES'),
+              Tab(text: 'PREDICTIONS'),
             ],
           ),
         ),
@@ -255,7 +257,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         return Stack(
           children: [
             Container(
-              height: 130,
+              height: 160,
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -444,7 +446,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   Widget _buildCausalTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -756,44 +758,281 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   // ── VR SITES TAB ───────────────────────────────────────────────────────────
 
-  Widget _buildVrTab() {
-    final sites =
-        (_vrSites['suggestions'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+  Widget _buildPredictionsTab() {
+  final topics = [
+    'temple', 'festival', 'fort', 'trade',
+    'colonial', 'kingdom', 'buddhism', 'king',
+  ];
+  final characters = ['king', 'nilame', 'dutch', 'citizen'];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-          child: _buildTabHeader(
-            icon: Icons.vrpano_outlined,
-            tag: 'IMMERSIVE',
-            title: 'VR Historical Sites',
-            subtitle:
-                'Immersive virtual reality experiences at historical locations',
-          ),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+        child: _buildTabHeader(
+          icon: Icons.auto_graph_outlined,
+          tag: 'AI PREDICTIONS',
+          title: 'Predicted Next Topics',
+          subtitle: 'AI predicts what you will likely explore next',
         ),
-        Expanded(
-          child: _loadingVr
-              ? _buildLoadingCenter()
-              : sites.isEmpty
-                  ? _buildEmptyState(
-                      icon: Icons.vrpano_outlined,
-                      tag: 'VR SITES',
-                      title: 'No Sites Available',
-                      subtitle:
-                          'Virtual reality sites could not be loaded.',
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      itemCount: sites.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 14),
-                      itemBuilder: (_, i) => _vrSiteCard(sites[i]),
+      ),
+
+      // ── Filters ──────────────────────────────────────────────────
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: _cardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: _navyMid.withValues(alpha: 0.15)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedTopic,
+                    isExpanded: true,
+                    style: const TextStyle(
+                        color: _textMain, fontSize: 13),
+                    dropdownColor: _cardBg,
+                    items: topics
+                        .map((t) => DropdownMenuItem(
+                              value: t,
+                              child: Text(t.toUpperCase(),
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
+                                      color: _textMain)),
+                            ))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => _selectedTopic = v);
+                        _loadPredictions();
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: _cardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: _navyMid.withValues(alpha: 0.15)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedCharacter,
+                    isExpanded: true,
+                    style: const TextStyle(
+                        color: _textMain, fontSize: 13),
+                    dropdownColor: _cardBg,
+                    items: characters
+                        .map((c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c.toUpperCase(),
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
+                                      color: _textMain)),
+                            ))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => _selectedCharacter = v);
+                        _loadPredictions();
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // ── Results ───────────────────────────────────────────────────
+      Expanded(
+        child: _loadingPredictions
+            ? _buildLoadingCenter()
+            : _predictions.isEmpty
+                ? _buildEmptyState(
+                    icon: Icons.auto_graph_outlined,
+                    tag: 'PREDICTIONS',
+                    title: 'No Predictions Yet',
+                    subtitle: 'Select a topic and character above.',
+                    action: TextButton(
+                      onPressed: _loadPredictions,
+                      child: const Text('Retry',
+                          style: TextStyle(
+                              color: _navyMid,
+                              fontWeight: FontWeight.w700)),
                     ),
+                  )
+                : ListView.separated(
+                    padding:
+                        const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    itemCount: _predictions.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (_, i) =>
+                        _predictionCard(_predictions[i]
+                            as Map<String, dynamic>),
+                  ),
+      ),
+    ],
+  );
+}
+
+Widget _predictionCard(Map<String, dynamic> prediction) {
+  final topic      = prediction['predicted_topic']?.toString() ?? '';
+  final confidence = (prediction['confidence'] as num?)?.toDouble() ?? 0.0;
+  final questions  = (prediction['suggested_questions'] as List?) ?? [];
+  final preloaded  = prediction['preloaded'] == true;
+
+  final int pct = (confidence * 100).round();
+  final Color barColor = pct >= 70
+      ? const Color(0xFF2E7D32)
+      : pct >= 40
+          ? const Color(0xFFB8860B)
+          : _navyMid;
+
+  return Container(
+    decoration: BoxDecoration(
+      color: _cardBg,
+      borderRadius: BorderRadius.circular(16),
+      border: const Border(top: BorderSide(color: _gold, width: 2.5)),
+      boxShadow: [
+        BoxShadow(
+          color: _navyMid.withValues(alpha: 0.07),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
         ),
       ],
-    );
-  }
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header row ──────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: _navyMid.withValues(alpha: 0.08),
+                ),
+                child: const Icon(Icons.trending_up_outlined,
+                    color: _navyMid, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      topic.toUpperCase(),
+                      style: const TextStyle(
+                          color: _textMain,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Confidence: $pct%',
+                      style: TextStyle(
+                          color: barColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              if (preloaded)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32).withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                        color: const Color(0xFF2E7D32)
+                            .withValues(alpha: 0.35)),
+                  ),
+                  child: const Text('CACHED',
+                      style: TextStyle(
+                          color: Color(0xFF2E7D32),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5)),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Confidence bar ──────────────────────────────────────
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: confidence,
+              minHeight: 5,
+              backgroundColor: _navyMid.withValues(alpha: 0.10),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+
+          // ── Suggested questions ─────────────────────────────────
+          if (questions.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const _SectionLabel(label: 'SUGGESTED QUESTIONS'),
+            const SizedBox(height: 8),
+            ...questions.map((q) => Padding(
+                  padding: const EdgeInsets.only(bottom: 7),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 5),
+                        width: 5, height: 5,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _gold.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          q.toString(),
+                          style: const TextStyle(
+                              color: _textSub,
+                              fontSize: 12.5,
+                              height: 1.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _vrSiteCard(Map<String, dynamic> site) {
     final typeColors = {

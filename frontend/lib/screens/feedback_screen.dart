@@ -269,7 +269,7 @@ class _FeedbackScreenState extends State<FeedbackScreen>
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 2.0)),
-              Text('Share your experience',
+              Text('Rewarding',
                   style: TextStyle(
                       color: _gold,
                       fontSize: 10,
@@ -326,7 +326,7 @@ class _FeedbackScreenState extends State<FeedbackScreen>
       animation: _shimmer,
       builder: (context, _) {
         return SizedBox(
-          height: 110,
+          height: 90,
           child: Stack(
             children: [
               Positioned.fill(
@@ -380,7 +380,7 @@ class _FeedbackScreenState extends State<FeedbackScreen>
                     ),
                     const SizedBox(height: 5),
                     const Text(
-                      'Community Feedback',
+                      '',
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 17,

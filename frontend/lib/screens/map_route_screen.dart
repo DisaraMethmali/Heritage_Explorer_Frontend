@@ -376,7 +376,7 @@ class _MapRouteScreenState extends State<MapRouteScreen>
 
             // ── Refresh button (top-right) ─────────────────────────────────
             Positioned(
-              top: 16,
+              top: 36,
               right: 12,
               child: GestureDetector(
                 onTap: _refreshRoute,

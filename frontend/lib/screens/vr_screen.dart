@@ -52,7 +52,7 @@ class _VRScreenState extends State<VRScreen> {
         if (mounted) {
           setState(() {
             _heading = (data['heading'] ?? 0.0).toDouble(); //
-            _battery = (data['battery'] ?? 0.0).toDouble(); //
+            _battery = (data['battery'] ?? 0.0).toDouble().abs(); //
           });
         }
       }
@@ -135,7 +135,7 @@ class _VRScreenState extends State<VRScreen> {
                   ),
                   // Rotating Compass Plate
                   AnimatedRotation(
-                    turns: -_heading / 360,
+                    turns: _heading / 360,
                     duration: const Duration(milliseconds: 200),
                     child: const Icon(
                       Icons.explore_outlined,

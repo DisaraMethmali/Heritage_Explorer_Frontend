@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
+import '../services/unity_service.dart';
 import 'heritage_screen.dart';
 import 'map_route_screen.dart';
 import '../utils/config.dart';
@@ -84,7 +85,7 @@ class _LocationScreenState extends State<LocationScreen>
     super.dispose();
   }
 
-  // ── Logic (unchanged) ──────────────────────────────────────────────────────
+  // ── Logic ──────────────────────────────────────────────────────────────────
 
   Future<void> _manualRefresh() async {
     await _fetchAndSend();
@@ -163,6 +164,15 @@ class _LocationScreenState extends State<LocationScreen>
         double? distValue = double.tryParse(distance);
         isAtHeritageSite = distValue != null && distValue < 0.2;
         GeoState.isUserNearSite = isAtHeritageSite;
+
+        // Unity GPS Sync
+        // if (_currentLat != null && _currentLon != null) {
+        //   UnityService.post({
+        //     "type": "SYNC_GPS",
+        //     "lat": _currentLat,
+        //     "lon": _currentLon,
+        //   });
+        // }
 
         setState(() => isLoading = false);
         _contentController.forward(from: 0);
@@ -310,8 +320,7 @@ class _LocationScreenState extends State<LocationScreen>
           onTap: _manualRefresh,
           child: Container(
             margin: const EdgeInsets.only(right: 16, top: 5, bottom: 5),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               border: Border.all(
                   color: const Color(0xFFFFD700).withValues(alpha: 0.6),
@@ -351,8 +360,8 @@ class _LocationScreenState extends State<LocationScreen>
         Positioned.fill(child: CustomPaint(painter: _MeshPainter())),
         AnimatedBuilder(
           animation: _shimmer,
-          builder: (context, _) =>
-              Positioned.fill(child: CustomPaint(painter: _ShimmerPainter(_shimmer.value))),
+          builder: (context, _) => Positioned.fill(
+              child: CustomPaint(painter: _ShimmerPainter(_shimmer.value))),
         ),
         SafeArea(
           child: Center(
@@ -563,7 +572,7 @@ class _LocationScreenState extends State<LocationScreen>
                     children: [
                       const SizedBox(height: 4),
 
-                      // ── Conditions card (first) ───────────────────────
+                      // ── Conditions card ───────────────────────────────
                       if (!isAtHeritageSite) ...[
                         _SectionLabel(label: 'SITE CONDITIONS'),
                         const SizedBox(height: 12),
@@ -690,7 +699,7 @@ class _LocationScreenState extends State<LocationScreen>
                         const SizedBox(height: 20),
                       ],
 
-                      // ── Location card (second) ────────────────────────
+                      // ── Location card ─────────────────────────────────
                       _SectionLabel(label: 'YOUR LOCATION'),
                       const SizedBox(height: 12),
 
@@ -713,7 +722,8 @@ class _LocationScreenState extends State<LocationScreen>
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         isAtHeritageSite
@@ -741,7 +751,8 @@ class _LocationScreenState extends State<LocationScreen>
                               ],
                             ),
 
-                            if (!isAtHeritageSite && exactAddress.isNotEmpty) ...[
+                            if (!isAtHeritageSite &&
+                                exactAddress.isNotEmpty) ...[
                               const SizedBox(height: 14),
                               Container(
                                 width: double.infinity,
@@ -789,6 +800,8 @@ class _LocationScreenState extends State<LocationScreen>
                                 siteName: nearestSite,
                                 siteId: siteId,
                                 events: eventsList,
+                                currentLat: _currentLat,
+                                currentLon: _currentLon,
                               ),
                             ),
                           );
@@ -893,7 +906,8 @@ class _LocationScreenState extends State<LocationScreen>
                             borderRadius: BorderRadius.circular(16),
                             color: Colors.white,
                             border: Border.all(
-                              color: const Color(0xFF002D72).withValues(alpha: 0.25),
+                              color: const Color(0xFF002D72)
+                                  .withValues(alpha: 0.25),
                               width: 1.5,
                             ),
                             boxShadow: [

@@ -247,7 +247,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     return AnimatedBuilder(
       animation: _shimmer,
       builder: (context, _) => SizedBox(
-        height: 90,
+        height: 80,
         child: Stack(children: [
           Positioned.fill(
             child: Container(
@@ -268,7 +268,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             child: CustomPaint(size: const Size(double.infinity, 24), painter: _WavePainter()),
           ),
           Positioned(
-            left: 20, right: 20, bottom: 14,
+            left: 20, right: 20, bottom: 24,
             child: Text(
               _records.isEmpty ? 'Your full conversation history' : '${_records.length} messages loaded',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.70), fontSize: 12),
