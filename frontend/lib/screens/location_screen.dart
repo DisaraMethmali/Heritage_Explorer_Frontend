@@ -35,6 +35,10 @@ class _LocationScreenState extends State<LocationScreen>
   double? _currentLat;
   double? _currentLon;
 
+  // last fetched coords (for smart update) / comment when testing
+  // double? _lastLat; 
+  // double? _lastLon;
+
   double? _destLat;
   double? _destLon;
 
@@ -120,6 +124,44 @@ class _LocationScreenState extends State<LocationScreen>
     _startSmartAutoUpdate();
   }
 
+  // SMART AUTO UPDATE SYSTEM
+  // void _startSmartAutoUpdate() {
+  //   _autoTimer = Timer.periodic(const Duration(seconds: 20), (timer) async {
+  //     // Get current location first
+  //     Position pos = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high,
+  //     );
+
+  //     double newLat = pos.latitude;
+  //     double newLon = pos.longitude;
+
+  //     // If this is the first run, save and stop here
+  //     if (_lastLat == null || _lastLon == null) {
+  //       _lastLat = newLat;
+  //       _lastLon = newLon;
+  //       return;
+  //     }
+
+  //     // Check distance moved
+  //     double moved = Geolocator.distanceBetween(
+  //       _lastLat!, _lastLon!,
+  //       newLat, newLon,
+  //     );
+
+  //     if (moved < 300) {
+  //       return; // NOT enough movement → skip backend call
+  //     }
+
+  //     // If moved > 300m → update backend
+  //     await _fetchAndSend();
+
+  //     // update last known position
+  //     _lastLat = newLat;
+  //     _lastLon = newLon;
+  //   });
+  // }
+
+  // Fake GPS for testing - Disable Auto update during testing
   void _startSmartAutoUpdate() {
     return;
   }
@@ -128,8 +170,17 @@ class _LocationScreenState extends State<LocationScreen>
     try {
       setState(() => loadingMessage = "Fetching nearby heritage sites...");
 
-      double fakeLat = 7.2902;
-      double fakeLon = 80.6337;
+      // Position pos = await Geolocator.getCurrentPosition(
+      //   desiredAccuracy: LocationAccuracy.high,
+      // );
+
+      // // Save user location
+      // _currentLat = pos.latitude;
+      // _currentLon = pos.longitude;
+
+      // Fake GPS for testing
+      double fakeLat = 7.2902; //Galle fort: 6.0488
+      double fakeLon = 80.6337; //Galle fort: 80.2205
       _currentLat = fakeLat;
       _currentLon = fakeLon;
 

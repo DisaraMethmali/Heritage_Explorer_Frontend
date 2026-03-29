@@ -63,8 +63,8 @@ class LocationMonitor {
       // final double lon = pos.longitude;
 
       // Fake GPS for testing
-      final double lat = 7.2902;
-      final double lon = 80.6337;
+      final double lat = 7.2902; //Galle fort: 6.0488
+      final double lon = 80.6337; //Galle fort: 80.2205
 
       // SAVE USER LOCATION GLOBALLY
       UserLocationState.userLat = lat;
