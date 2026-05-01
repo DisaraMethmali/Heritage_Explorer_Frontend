@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class UnityService {
   // Use your PC/Headset IP. If using Android Emulator with local Unity, use 10.0.2.2
-  static const String unityUrl = "http://192.168.1.5:8080";
+  static const String unityUrl = "http://192.168.1.4:8080";
 
   static Future<void> post(Map<String, dynamic> body) async {
     print(

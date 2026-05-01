@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  static const String baseUrl = 'http://192.168.1.5:5000';
+  static const String baseUrl = 'http://192.168.1.4:5000';
 
   static const Map<String, CharacterInfo> characters = {
     'king': CharacterInfo(

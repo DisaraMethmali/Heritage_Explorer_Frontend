@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildHeroSection() {
     final screenHeight = MediaQuery.of(context).size.height;
-    final heroHeight = screenHeight * 0.41;
+    final heroHeight = screenHeight * 0.42;
 
     return FadeTransition(
       opacity: _heroFade,
@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               height: heroHeight,
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
+                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 40),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,

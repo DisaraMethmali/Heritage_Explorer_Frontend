@@ -145,7 +145,7 @@ class _AreaSearchResultScreenState extends State<AreaSearchResultScreen>
             children: [
               // FIX 2: Hero is a fixed 110px SizedBox — no longer uses
               //         screenHeight * 0.18 which caused overflow on small screens.
-              _buildHero(),
+              // _buildHero(),
 
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
