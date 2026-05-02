@@ -8,6 +8,6 @@ class NavigationState {
       ValueNotifier<int>(0);
 
   static void switchToRecommendation() {
-    selectedIndex.value = 2;
+    selectedIndex.value = 3;
   }
 }
