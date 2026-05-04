@@ -167,7 +167,7 @@ class ApiService {
             'session_id': sessionId,
           }),
         )
-        .timeout(const Duration(seconds: 60));
+        .timeout(const Duration(seconds: 6000));
     if (res.statusCode != 200) {
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       throw ApiException(data['error'] ?? 'Chat failed');
@@ -185,7 +185,7 @@ class ApiService {
           headers: _headers,
           body: jsonEncode({'query': query, 'session_id': sessionId}),
         )
-        .timeout(const Duration(seconds: 120));
+        .timeout(const Duration(seconds: 12000));
     if (res.statusCode != 200) {
       throw ApiException('Failed to get multi-character response');
     }
