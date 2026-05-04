@@ -143,7 +143,7 @@ class _SiteSearchScreenState extends State<SiteSearchScreen>
           position: _contentSlide,
           child: Column(
             children: [
-              _buildHero(),
+              // _buildHero(),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                 child: _buildSearchBar(),

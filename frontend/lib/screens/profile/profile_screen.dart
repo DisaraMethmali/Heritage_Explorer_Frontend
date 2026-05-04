@@ -13,6 +13,7 @@ import '../auth/login_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../profile/report_summary_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -616,41 +617,111 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ── PDF Report section (logic unchanged) ──────────────────────────────────
 
   Widget _buildReportSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: const Border(top: BorderSide(color: _gold, width: 2.5)),
-        boxShadow: [
-          BoxShadow(color: _navyMid.withValues(alpha: 0.07), blurRadius: 14, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header
-        Row(children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _gold.withValues(alpha: 0.12),
-              border: Border.all(color: _gold.withValues(alpha: 0.4), width: 1),
-            ),
-            child: const Icon(Icons.picture_as_pdf, color: _goldDeep, size: 18),
+    return Consumer<AuthProvider>(
+      builder: (_, auth, __) {
+        final user = auth.user;
+        if (user == null) return const SizedBox.shrink();
+  
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: const Border(top: BorderSide(color: _gold, width: 2.5)),
+            boxShadow: [
+              BoxShadow(
+                color: _navyMid.withValues(alpha: 0.07),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Historical Journey Report',
-                  style: TextStyle(color: _textMain, fontWeight: FontWeight.w700, fontSize: 15)),
-              Text('Download your personalised PDF report',
-                  style: TextStyle(color: _textSub, fontSize: 12)),
-            ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _gold.withValues(alpha: 0.12),
+                    border: Border.all(color: _gold.withValues(alpha: 0.4)),
+                  ),
+                  child: const Icon(Icons.auto_stories_outlined,
+                      color: _goldDeep, size: 18),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Historical Journey Report',
+                          style: TextStyle(
+                              color: _textMain,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15)),
+                      Text('Your personalised knowledge summary',
+                          style: TextStyle(color: _textSub, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 14),
+  
+              // ── View Report button (opens ReportSummaryScreen) ───────────
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReportSummaryScreen(
+                        authToken: auth.token ?? '',
+                        username:  user.username,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(
+                      colors: [_navyMid, _blue, _blueMid],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _navyMid.withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.auto_stories_outlined,
+                          color: Colors.white, size: 18),
+                      SizedBox(width: 10),
+                      Text('View Report & Key Points',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14)),
+                      SizedBox(width: 6),
+                      Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white54, size: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ]),
-        const SizedBox(height: 14),
-        _fullReportButton(),
-      ]),
+        );
+      },
     );
   }
 

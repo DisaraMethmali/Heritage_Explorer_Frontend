@@ -512,7 +512,7 @@ class _LocationScreenState extends State<LocationScreen>
                 Stack(
                   children: [
                     Container(
-                      height: screenHeight * 0.30,
+                      height: screenHeight * 0.32,
                       width: double.infinity,
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
@@ -538,10 +538,10 @@ class _LocationScreenState extends State<LocationScreen>
 
                     // Hero text content
                     SizedBox(
-                      height: screenHeight * 0.30,
+                      height: screenHeight * 0.32,
                       child: SafeArea(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
+                          padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.end,
                             crossAxisAlignment: CrossAxisAlignment.start,
