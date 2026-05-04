@@ -133,8 +133,10 @@ class ChatProvider extends ChangeNotifier {
       _error = e.message;
       _isLoading = false;
       notifyListeners();
-    } catch (e) {
-      _error = 'Failed to get response. Check your connection.';
+   } catch (e) {
+      debugPrint('API ERROR TYPE: ${e.runtimeType}');
+      debugPrint('API ERROR: $e');
+      _error = 'Failed: $e';
       _isLoading = false;
       notifyListeners();
     }
